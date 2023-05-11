@@ -1,0 +1,103 @@
+- name: installing lamp
+  hosts: myserver
+  become: yes
+  tasks:
+       - name: Update package managers (apt/yum)
+         package:
+             name: '*'
+             state: latest
+         register: update_result
+         when:
+            - ansible_os_family == 'Debian'
+            - ansible_distribution_release != 'Amazon'
+
+       - name: Update package manager (yum)
+         package:
+             name: '*'
+             state: latest
+         register: update_result
+         when:
+            - ansible_os_family == 'RedHat'
+            - ansible_distribution == 'Amazon'
+
+       - name: Install Nginx
+         package:
+             name: nginx
+             state: present
+
+       - name: installing mysql on amazon linux
+         yum:
+           name: mariadb105-server
+           state: present
+         when: ansible_distribution=='Amazon'
+
+       - name: installing mysql on ubuntu
+         apt:
+           name: mariadb
+           state: present
+         when:
+            - ansible_os_family == 'Debian'
+            - ansible_distribution_release != 'Amazon'
+
+       - name: starting nginx on amazon linux and ubuntu
+         service:
+           name: nginx
+           state: started
+
+       - name: starting mysql on amazon linux
+         service:
+           name: mariadb
+           state: started
+         when: ansible_distribution=='Amazon'
+
+       - name: starting mysql on ubuntu
+         service:
+           name: mysql
+           state: started
+         when:
+            - ansible_os_family == 'Debian'
+            - ansible_distribution_release != 'Amazon'
+
+       - name: installing php on amazon linux
+         yum: name=php state=present
+         when: ansible_distribution=='Amazon'
+
+       - name: installing php on ubuntu
+         apt: name=php state=present
+         when:
+            - ansible_os_family == 'Debian'
+            - ansible_distribution_release != 'Amazon'
+
+       - name: installing php-fpm on amazon linux
+         yum: name=php-fpm state=present
+         when: ansible_distribution=='Amazon'
+         notify: ['restart nginx','restart mariadb','restart php-fpm']
+
+       - name: starting php8.1-fpm on ubuntu
+         service: name=php8.1-fpm state=started
+         when:
+            - ansible_os_family == 'Debian'
+            - ansible_distribution_release != 'Amazon'
+         notify: ['restart nginx','restart mysql','restart php8.1-fpm']
+
+  handlers:
+     - name: restart mariadb
+       service:
+         name: mariadb
+         state: restarted
+     - name: restart nginx
+       service:
+         name: nginx
+         state: restarted
+     - name: restart php-fpm
+       service:
+         name: php-fpm
+         state: restarted
+     - name: restart mysql
+       service:
+         name: mysql
+         state: restarted
+     - name: restart php8.1-fpm
+       service:
+         name: php8.1-fpm
+         state: restarted

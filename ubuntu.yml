@@ -1,0 +1,43 @@
+---
+- name: Install Nginx, MySQL, and PHP
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Install MySQL
+      apt:
+        name: mysql-server
+        state: present
+
+    - name: Install PHP
+      apt:
+        name:
+          - php8.1-fpm
+        state: present
+
+    - name: Enable and start Nginx service
+      service:
+        name: nginx
+        enabled: true
+        state: started
+
+    - name: Enable and start MySQL service
+      service:
+        name: mysql
+        enabled: true
+        state: started
+
+    - name: Enable and start PHP-FPM service
+      service:
+        name: php8.1-fpm
+        enabled: true
+        state: started

@@ -1,0 +1,98 @@
+---
+- name: Install Nginx, MySQL, and PHP
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Update package managers (apt/yum)
+      package:
+        name: '*'
+        state: latest
+      register: update_result
+      when:
+        - ansible_os_family == 'Debian'
+        - ansible_distribution_release != 'Amazon'
+
+    - name: Update package manager (yum)
+      package:
+        name: '*'
+        state: latest
+      register: update_result
+      when:
+        - ansible_os_family == 'RedHat'
+        - ansible_distribution == 'Amazon'
+
+    - name: Install Nginx
+      package:
+        name: nginx
+        state: present
+    
+    - name: installing mysql
+      yum:
+        name: mariadb105-server
+        state: present
+      when: ansible_distribution=='Amazon'
+         
+    - name: installing mysql
+      apt:
+        name: mysql-server
+        state: present
+      when: ansible_distribution=='ubuntu'
+    - name: starting nginx
+      service:
+        name: nginx
+        state: started
+    - name: starting mysql
+      service:
+           name: mariadb
+           state: started
+         when: ansible_distribution=='Amazon'
+       - name: starting mysql
+         service:
+           name: mysql
+           state: started
+         when: ansible_distribution=='ubuntu'
+
+       - name: installing php
+         yum: name=php state=present
+         when: ansible_distribution=='Amazon'
+       - name: installing php
+         apt: name=php state=present
+         when: ansible_distribution=='ubuntu'
+       - name: installing php-fpm
+         yum: name=php-fpm state=present
+         when: ansible_distribution=='Amazon'
+       - name: installing php-fpm
+         apt: name=php8.1-fpm state=present
+         when: ansible_distribution=='ubuntu'
+       - name: starting php-fpm
+         service: name=php-fpm state=started
+         notify: ['restart nginx','restart mariadb','restart php-fpm']
+         when: ansible_distribution=='Amazon'
+       - name: starting php-fpm
+         service: name=php8.1-fpm state=started
+         notify: ['restart nginx','restart mysql','restart php8.1-fpm']
+         when: ansible_distribution=='ubuntu'
+
+  handlers:
+     - name: restart mariadb
+       service:
+         name: mariadb
+         state: restarted
+     - name: restart nginx
+       service:
+         name: nginx
+         state: restarted
+     - name: restart php-fpm
+       service:
+         name: php-fpm
+         state: restarted
+     - name: restart mysql
+       service:
+         name: mysql
+         state: restarted
+     - name: restart php8.1-fpm
+       service:
+         name: php8.1-fpm
+         state: restarted
+
